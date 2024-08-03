@@ -21,6 +21,11 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
         }
         return false;
     }
+    else if (pattern[0] == '[' && pattern[pattern.length() - 1] == ']') {
+        const std::string string_to_match = pattern.substr(1, pattern.length()-2);
+        std::cout << string_to_match << std::endl;
+        return input_line.find_first_of(string_to_match) != std::string::npos;
+    }
     else {
         throw std::runtime_error("Unhandled pattern " + pattern);
     }
@@ -50,7 +55,6 @@ int main(int argc, char* argv[]) {
     std::string input_line;
     std::getline(std::cin, input_line);
 
-    std::cout << "AAAAAAAAA" << std::endl;
     try {
         if (match_pattern(input_line, pattern)) {
             std::cout << "Pattern matched" << std::endl;
