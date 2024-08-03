@@ -12,6 +12,15 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
         // It returns string::npos if it doesn't find any. It is used to indicate no matches.
         return input_line.find_first_of("0123456789") != std::string::npos;  // 1 if match, 0 if none.
     }
+    else if (pattern == "\\w") {
+        // return input_line.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos;  // 1 if match, 0 if none.
+        for (const char &l : input_line) {
+            if (std::isdigit(l) || std::isalpha(l)){
+                return true;
+            }
+        }
+        return false;
+    }
     else {
         throw std::runtime_error("Unhandled pattern " + pattern);
     }
