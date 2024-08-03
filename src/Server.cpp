@@ -14,15 +14,15 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
     }
     else if (pattern == "\\w") {
         // return input_line.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") != std::string::npos;  // 1 if match, 0 if none.
-        for (const char &l : input_line) {
-            if (std::isdigit(l) || std::isalpha(l)){
+        for (const char& l : input_line) {
+            if (std::isdigit(l) || std::isalpha(l)) {
                 return true;
             }
         }
         return false;
     }
     else if (pattern[0] == '[' && pattern[pattern.length() - 1] == ']') {
-        const std::string string_to_match = pattern.substr(1, pattern.length()-2);
+        const std::string string_to_match = pattern.substr(1, pattern.length() - 2); // the length of the pattern we are matching([___]) is pattern.length() - 2 (minus the "[]")
         std::cout << string_to_match << std::endl;
         return input_line.find_first_of(string_to_match) != std::string::npos;
     }
