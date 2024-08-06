@@ -80,9 +80,7 @@ bool match_symbol(const char* text, const char* pattern) {
         std::cout << *text << std::endl;
         std::cout << std::endl;
 
-        while (pattern[0] == text[0]) { // Match all(if any) as well.
-            text++;
-        }
+        while (pattern[0] == text[0]) text++; // Match all (if any).
         return match_symbol(text, pattern + 2);
     }
     if (*text != '\0' && (*pattern == '.' || *pattern == *text)) { // . => exact matches
