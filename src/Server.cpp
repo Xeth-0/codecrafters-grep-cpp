@@ -74,6 +74,17 @@ bool match_symbol(const char* text, const char* pattern) {
             return match_symbol(text, pattern + 2);
         }
     }
+    if (pattern[1] == '?') { // Match zero or more times
+        std::cout << "Matching +..." << std::endl;
+        std::cout << "Pattern: " << pattern[0] << pattern[1] << std::endl;
+        std::cout << *text << std::endl;
+        std::cout << std::endl;
+
+        while (pattern[0] == text[0]) { // Match the rest(if any) as well.
+            text++;
+        }
+        return match_symbol(text, pattern + 2);
+    }
     if (*text != '\0' && (*pattern == '.' || *pattern == *text)) { // . => exact matches
         std::cout << "Match: exact match. Proceeding..." << std::endl;
         return match_symbol(text + 1, pattern + 1);
