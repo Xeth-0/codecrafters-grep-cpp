@@ -80,7 +80,7 @@ bool match_symbol(const char* text, const char* pattern) {
         std::cout << *text << std::endl;
         std::cout << std::endl;
 
-        while (pattern[0] == text[0]) { // Match the rest(if any) as well.
+        while (pattern[0] == text[0]) { // Match all(if any) as well.
             text++;
         }
         return match_symbol(text, pattern + 2);
