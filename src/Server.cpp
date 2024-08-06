@@ -76,7 +76,7 @@ bool match_symbol(const char* text, const char* pattern) {
 
     std::cout << "Matching Symbol..." << std::endl;
     std::cout << "text: " << text << std::endl;
-    std::cout << "pattern: " << *pattern << std::endl;
+    std::cout << "pattern: " << pattern << std::endl;
     std::cout << std::endl;
 
     // Base case
