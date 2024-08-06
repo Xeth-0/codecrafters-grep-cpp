@@ -21,10 +21,10 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
 
         return 0;   // Failed to match.
     }
-    // Start of String Anchor
-    if (pattern_ptr[0] == '^') {
+    if (pattern_ptr[0] == '^') { // Start of String Anchor
         return match_symbol(text_ptr, pattern_ptr + 1); // Avoids the loop below, so only matches at the start.
     }
+
     // Iterate over the text and attempt to match the pattern.
     do {
         if (match_symbol(text_ptr, pattern_ptr)) return 1;
@@ -64,6 +64,9 @@ bool match_symbol(const char* text, const char* pattern) {
     if (*text != '\0' && (*pattern == '.' || *pattern == *text)) { // . => exact matches
         std::cout << "Match: exact match. Proceeding..." << std::endl;
         return match_symbol(text + 1, pattern + 1);
+    }
+    if (pattern[0] == '$' && (pattern[1] == '\0')) { // End of string anchor
+        return *text == '\0';
     }
 
     return 0;
