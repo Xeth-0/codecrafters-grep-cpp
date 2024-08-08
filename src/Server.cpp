@@ -38,21 +38,34 @@ bool match_symbol(const char* text, const char* pattern) {
     // Recursive matcher. Match entire pattern over the remaining text. 
     // Need to iterate both the text and the pattern.
 
+    // Logging lines for debugging.
     std::cout << "Matching Symbol..." << std::endl;
     std::cout << "text: " << text << std::endl;
     std::cout << "pattern: " << pattern << std::endl;
     std::cout << std::endl;
 
     // Base case
-    if (pattern[0] == '\0') {
+    if (pattern[0] == '\0' || pattern[0] == '|') {
         std::cout << "End of pattern." << std::endl;
+        std::cout << (pattern[0] == '|') ? ("    (Optional path)\n") : "";   // End of the optional path
         return 1;
     }
     // Matching the pattern to the different symbols
+    if (pattern[0] == '(') {
+        if (match_symbol(text, pattern + 1)) {
+            while (pattern[0] != ')') pattern++; // Iterate to the end of the either/or pattern since we already found a match.
+            return match_symbol(text, pattern + 1);  // Continue.
+        }
+        while (pattern[0] != '|') pattern++; // Iterate to the end of the second pattern since we didn't find a match.
+        return match_symbol(text, pattern + 1);  // Try to match the second pattern.
+    }
+    if (pattern[0] == ')') { // End of the either/or matcher. Means we matched the second pattern. 
+        return match_symbol(text, pattern + 1);  // Continue.
+    }
     if (pattern[0] == '\\' && pattern[1] == 'd') { // \d => digit (0-9)
         if (std::isdigit(text[0])) {
             std::cout << "Match: digit. Proceeding..." << std::endl;
-            return match_symbol(text + 1, pattern + 2); // pattern + 2 because the pattern is 2 chars.
+            return match_symbol(text + 1, pattern + 2); // (pattern + 2) because the pattern here is 2 chars(\d).
         }
     }
     if (pattern[0] == '\\' && pattern[1] == 'w') { // \w => alphanumeric
