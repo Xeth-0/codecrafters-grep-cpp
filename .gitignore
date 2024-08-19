@@ -49,5 +49,5 @@ build/
 vcpkg_installed
 
 # Unused code/files/tutorials
-src/matcher.c
-src/Server2.cpp
+src/crap/*
+.vscode/*
