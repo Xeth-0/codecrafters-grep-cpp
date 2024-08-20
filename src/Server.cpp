@@ -4,7 +4,7 @@
 
 
 bool match_once_or_more(const char*& text, char* pattern);
-bool match_zero_or_more(const char*& text, char* pattern);
+bool match_zero_or_one(const char*& text, char* pattern);
 bool match_symbol(const char*& text, const char*& pattern);
 bool match_character_group(const char*& text, char*& pattern);
 void capture_patterns(const char* pattern, int pattern_length);
@@ -48,7 +48,7 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
 
         if (match_symbol(text, pattern)) {
             std::cout << "MATCH SUCCESS!!!!!!!!!!!" << std::endl;
-            return 1;
+            return true;
         }
     } while (*text_ptr++ != '\0');
 
@@ -59,22 +59,24 @@ bool match_symbol(const char*& text, const char*& pattern) {
     // Recursive matcher. Match entire pattern over the remaining text. 
     // Need to iterate both the text and the pattern.
 
-    // Logging lines for debugging.
-    std::cout << std::endl;
-    std::cout << "Matching Symbol...";
-    std::cout << "|text: " << text;
-    std::cout << "|pattern: |" << pattern << std::endl;
+    // // Logging lines for debugging.
+    // std::cout << std::endl;
+    // std::cout << "Matching Symbol...";
+    // std::cout << "|text: " << text;
+    // std::cout << "|pattern: |" << pattern << std::endl;
 
     // Base cases
     if (pattern[0] == '\0' || pattern[0] == '|') {
-        return 1;
+        return true;
     }
     if (pattern[0] == '$' && (pattern[1] == '\0')) { // End of string anchor
         return *text == '\0';
     }
     if (pattern[0] == ')') { // End of the either/or matcher. Means we matched the second pattern. 
-        // return match_symbol(text, ++pattern);  // Continue.
-        return 1;
+        return true;
+    }
+    if (text[0] == '\0') {
+        return false;
     }
     // Matching the pattern to the different symbols
     if (pattern[0] == '\\' && isdigit(pattern[1])) {
@@ -93,7 +95,6 @@ bool match_symbol(const char*& text, const char*& pattern) {
         }
     }
     if (pattern[0] == '[') { // Character Groups
-        std::cout << "Matching character group([...]) ......" << std::endl;
         const char* pattern_end = pattern;
         while (pattern_end[0] != ']') pattern_end++;
 
@@ -101,10 +102,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
         strncpy(char_group_pattern, pattern, pattern_end - pattern + 1);
         char_group_pattern[pattern_end - pattern + 2] = '\0';
 
-        std::cout << "  pattern: " << char_group_pattern << std::endl;
-
         if (pattern_end[1] == '+') { // Match one or more.
-            std::cout << "  Match once or more" << std::endl;
             if (match_once_or_more(text, char_group_pattern)) {
                 pattern = pattern_end + 2;
                 return match_symbol(text, pattern);
@@ -112,8 +110,6 @@ bool match_symbol(const char*& text, const char*& pattern) {
             return false;
         }
         else if (pattern_end[1] == '?') { // Match zero or more.
-            std::cout << "  Match zero or more" << std::endl;
-
             match_character_group(text, char_group_pattern);
             pattern = pattern_end + 2;
             return match_symbol(text, pattern);
@@ -127,9 +123,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             return false;
         }
     }
-    if (pattern[0] == '(') {
-        std::cout << "Matching captured or either/or(...) ....." << std::endl;
-
+    if (pattern[0] == '(') { // Optional and/or captured matching.
         const char* text_start = text;
         const char* pattern_start = pattern;
 
@@ -138,12 +132,13 @@ bool match_symbol(const char*& text, const char*& pattern) {
             return match_symbol(text, ++pattern);
         }
 
-        text = text_start; // reset
+        // Reset
+        text = text_start;
         pattern = pattern_start;
 
         while (pattern[0] != '|') {
             if (pattern[0] == ')') { // Not an optional pattern, it's a captured pattern
-                return 0; // It already failed to match. Since there is no alternative, return false
+                return false; // It already failed to match. Since there is no alternative, return false
             }
             pattern++; // Iterate to the start of the second pattern since we didn't find a match.
         }
@@ -166,7 +161,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             strncpy(p, pattern, 2);
             p[2] = '\0';
 
-            match_zero_or_more(text, p);
+            match_zero_or_one(text, p);
             pattern += 2;
             return match_symbol(text, pattern);
         }
@@ -193,7 +188,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             strncpy(p, pattern, 2);
             p[2] = '\0';
 
-            match_zero_or_more(text, p);
+            match_zero_or_one(text, p);
             pattern += 3;
             return match_symbol(text, pattern);
         }
@@ -219,15 +214,14 @@ bool match_symbol(const char*& text, const char*& pattern) {
         strncpy(p, pattern, 1);
         p[1] = '\0';
 
-        match_zero_or_more(text, p);
+        match_zero_or_one(text, p);
         pattern += 2;
         return match_symbol(text, pattern);
     }
     if (*text != '\0' && (*pattern == '.' || *pattern == *text)) { // . => exact matches
-        std::cout << "Match: exact match. Proceeding..." << std::endl;
         return match_symbol(++text, ++pattern);
     }
-    return 0;
+    return false;
 }
 
 bool match_character_group(const char*& text, char*& pattern) {
@@ -237,34 +231,31 @@ bool match_character_group(const char*& text, char*& pattern) {
     pattern++; // Start of pattern(skip the [).
 
     if (pattern[0] == '^') {
-        std::cout << "Negative character group" << std::endl;
         negative_char_group = true;
         pattern++;
     }
     const char* p = pattern;
 
     do {
-        std::cout << "    " << p << std::endl;
         if (*text == *p) {  // Found a match
-            if (negative_char_group) return false; // Finding a match is a fail
-
+            if (negative_char_group) {
+                return false; // Finding a match is a fail
+            }
             text++;
-            return 1;
+            return true;
 
         }
         p++;
     } while (*p != ']');
 
-    std::cout << "    no match" << std::endl;
-
+    // Failed to find a match. Good if we're using a negative character group.
     if (negative_char_group) {
         text++;
-        std::cout << text << std::endl;
-        return 1;
+        return true;
     }
 
     text = text_start; // reset
-    return 0;
+    return false;
 }
 
 bool match_once_or_more(const char*& text, char* pattern) {
@@ -282,17 +273,12 @@ bool match_once_or_more(const char*& text, char* pattern) {
     return flag;
 }
 
-bool match_zero_or_more(const char*& text, char* pattern) {
-
-    bool flag = true;
+bool match_zero_or_one(const char*& text, char* pattern) {
     const char* p = pattern;
     const char* text_start = text;
 
-    if (match_symbol(text, p)) {
-        return match_zero_or_more(text, pattern) || flag;
-    }
-    text = text_start;
-    return flag;
+    if (!match_symbol(text, p)) text = text_start;
+    return true;
 }
 
 
@@ -302,7 +288,6 @@ void capture_patterns(const char* pattern, int pattern_length) {
 
     // The wrapper for the recursive call basically.
 
-    // std::cout << "capturing patterns" << std::endl;
     while (pattern[0] != '\0') {
         const char* pattern_start = pattern;
         if (pattern[0] == '(') { // Start of the capture pattern signifier.
@@ -351,7 +336,6 @@ char** capture_pattern_group(const char*& pattern, int pattern_length, int& sub_
         }
         pattern++;
     }
-    std::cerr << "Here somehow. Pattern didn't end normally, you done fucked up" << std::endl;
     return pattern_group;
 }
 
