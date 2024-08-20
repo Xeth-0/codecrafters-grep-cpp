@@ -3,14 +3,13 @@
 #include <cstring>
 
 
+void capture_patterns(const char*& pattern);
 bool match_once_or_more(const char*& text, char* pattern);
 bool match_zero_or_one(const char*& text, char* pattern);
 bool match_symbol(const char*& text, const char*& pattern);
 bool match_character_group(const char*& text, char*& pattern);
-void capture_patterns(const char* pattern, int pattern_length);
 bool match_pattern(const std::string& input_line, const std::string& pattern);
 char** capture_pattern_group(const char*& pattern, int pattern_length, int& sub_pattern_length);
-
 
 char** captured_patterns;   // Storing any captured patterns.
 int num_captured_patterns;  // Length of the array.
@@ -22,16 +21,10 @@ int num_captured_patterns;  // Length of the array.
 
 
 
-bool match_pattern(const std::string& input_line, const std::string& pattern) {
+bool match_pattern(const std::string& input_line, const std::string& pattern_string) {
     // Starting point for the matcher. Handles any special patterns like character groups itself. Otherwise calls match_symbol.
     const char* text_ptr = input_line.c_str(); // Pointer to iterate over the input_line. (Wanted to avoid creating a new copy)
-    const char* pattern_ptr = pattern.c_str(); // Pointer to iterate over the pattern.
-
-    captured_patterns = (char**)malloc(pattern.length());
-    num_captured_patterns = 0;
-
-    // Capture any patterns in ().
-    capture_patterns(pattern_ptr, pattern.length());
+    const char* pattern_ptr = pattern_string.c_str(); // Pointer to iterate over the pattern.
 
     // Special Matches
     if (pattern_ptr[0] == '^') { // Start of String Anchor
@@ -45,6 +38,11 @@ bool match_pattern(const std::string& input_line, const std::string& pattern) {
     do {  // Iterate over the text and attempt to match the pattern.
         const char* text = text_ptr;
         const char* pattern = pattern_ptr;
+
+        free(captured_patterns);
+
+        captured_patterns = (char**)malloc(pattern_string.length());
+        num_captured_patterns = 0;
 
         if (match_symbol(text, pattern)) {
             std::cout << "MATCH SUCCESS!!!!!!!!!!!" << std::endl;
@@ -60,10 +58,10 @@ bool match_symbol(const char*& text, const char*& pattern) {
     // Need to iterate both the text and the pattern.
 
     // // Logging lines for debugging.
-    // std::cout << std::endl;
-    // std::cout << "Matching Symbol...";
-    // std::cout << "|text: " << text;
-    // std::cout << "|pattern: |" << pattern << std::endl;
+    std::cout << std::endl;
+    std::cout << "Matching Symbol...";
+    std::cout << "|text: " << text;
+    std::cout << "|pattern: |" << pattern << std::endl;
 
     // Base cases
     if (pattern[0] == '\0' || pattern[0] == '|') {
@@ -127,10 +125,29 @@ bool match_symbol(const char*& text, const char*& pattern) {
         const char* text_start = text;
         const char* pattern_start = pattern;
 
+        int captured_pattern_index = num_captured_patterns; // Predicting the FUTURE!!!!!!!! (that's where this pattern will be placed.)
+
         if (match_symbol(text, ++pattern)) {
-            while (pattern[0] != ')') pattern++;
+            while (pattern[0] != ')') {
+                pattern++;
+            }
+            pattern++;
+            
+            pattern = pattern_start;
+            capture_patterns(pattern); // Will capture the entire pattern, incl. sub-patterns. 
+
+            // Replacing the captured pattern with the text it matched with. 
+            // (Ahh, the magic of recursive calls. The subpatterns should already
+            // be  matched and replaced with their text by this point).
+            int captured_text_length = text - text_start;
+            char* captured_text = (char*)malloc(captured_text_length + 1);
+            strncpy(captured_text, text_start, captured_text_length);
+            captured_text[captured_text_length] = '\0';
+            
+            captured_patterns[captured_pattern_index] = captured_text;
             return match_symbol(text, ++pattern);
         }
+
 
         // Reset
         text = text_start;
@@ -144,7 +161,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
         }
         return match_symbol(text, ++pattern);  // Try to match the second pattern.
     }
-    if (pattern[0] == '\\' && pattern[1] == 'd') { // \d => digit (0-9)
+    if (pattern[0] == '\\' && pattern[1] == 'd') { // \d => digit (0-9k)
 
         if (pattern[2] == '+') {
             char* p = (char*)malloc(3);
@@ -282,28 +299,41 @@ bool match_zero_or_one(const char*& text, char* pattern) {
 }
 
 
-void capture_patterns(const char* pattern, int pattern_length) {
-    // Need to do this first, this way we can do one iteration to capture all the patterns and worry about matching later.
-    // Also avoids the need to recapture the patterns.
+// void capture_patterns(const char* pattern) {
+//     // Need to do this first, this way we can do one iteration to capture all the patterns and worry about matching later.
+//     // Also avoids the need to recapture the patterns.
 
-    // The wrapper for the recursive call basically.
+//     // The wrapper for the recursive call basically.
 
-    while (pattern[0] != '\0') {
-        const char* pattern_start = pattern;
-        if (pattern[0] == '(') { // Start of the capture pattern signifier.
-            int sub_pattern_length = 0;
-            char** new_patterns = capture_pattern_group(pattern, pattern_length, sub_pattern_length); // will capture any sub-patterns
+//     int pattern_length = strlen(pattern);
+//     int pattern_index = num_captured_patterns - 1;
+//     num_captured_patterns++;
 
-            for (int i = 0; i < sub_pattern_length; i++) {
-                captured_patterns[num_captured_patterns] = new_patterns[i];
-                num_captured_patterns++;
-            }
-        }
-        pattern++;
-        pattern_length--;
-    }
-    return;
-}
+//     while (pattern[0] != ')') {
+
+//         if (pattern[0] == '\0'){ // Shouldn't happen but failsafe
+//             std::cerr << "Unexpected end of pattern while capturing patterns. Exiting" << std::endl;
+//             throw "Unexpected end of pattern while capturing patterns. Exiting"; // Yes this will be unhandled. As it should be.
+//         }
+
+//         const char* pattern_start = pattern;
+//         if (pattern[0] == '(') { // Start of the capture pattern signifier.
+//             int sub_pattern_length = 0;
+
+//             char** new_patterns = capture_pattern_group(pattern, pattern_length, sub_pattern_length); // will capture any sub-patterns
+//             // Above needs to skip past the subpatterns ')'. That way, when this loop encounters it, it's the end of the entire thing.
+//             // int sub_pattern_index = pattern_index + 1;
+//             // for (int i = 0; i < sub_pattern_length; i++) {
+//             //     captured_patterns[sub_pattern_index] = new_patterns[i];
+//             //     sub_pattern_index++;
+//             // }
+//             break;
+//         }
+//         pattern++;
+//         pattern_length--;
+//     }
+//     return;
+// }
 
 char** capture_pattern_group(const char*& pattern, int pattern_length, int& sub_pattern_length) {
     char** pattern_group = (char**)malloc(pattern_length);
@@ -337,6 +367,42 @@ char** capture_pattern_group(const char*& pattern, int pattern_length, int& sub_
         pattern++;
     }
     return pattern_group;
+}
+
+void capture_patterns(const char*& pattern) {
+    // Alright i keep forgetting my own plan as i code this. Sideeffect of being distracted WHILE doing this
+    // Oi, the moron reading this, I need you to keep track of which index we're storing these captured patterns at.
+    // use num_captured_patterns (see how i do it 3 lines below?), and identify which index something will go into 
+    // from where this is called. FIGURE OUT THE REST, thank you :).
+    bool is_optional_pattern = false;
+    const char* pattern_start = pattern;
+    const int captured_pattern_index = num_captured_patterns;
+
+    // Here's another stupid move. I'm going to assume the pattern WILL be captured. Cause fuck it
+    num_captured_patterns++;
+
+    while (*pattern != ')') { // Iterate to the end of the pattern.
+        if (*pattern == '|') {
+            is_optional_pattern = true;
+        }
+        else if ((pattern - pattern_start != 0) && *pattern == '(') { // nested pattern
+            capture_patterns(pattern);
+        }
+        else if (*pattern == '\0') {
+            std::cerr << "Unexpected end of pattern while capturing pattern. Exiting...." << std::endl;
+            throw "Unexpected end of pattern while capturing pattern. Exiting....";
+        }
+
+        pattern++;
+    }
+
+    // Now I'll just be assuming that we've iterated over the pattern here.
+    char* captured_pattern = (char*)malloc(pattern - pattern_start + 1);
+    strncpy(captured_pattern, pattern_start, pattern - pattern_start + 1);
+    captured_pattern[pattern - pattern_start + 1] = '\0';
+
+    captured_patterns[captured_pattern_index] = captured_pattern;
+    return;
 }
 
 
