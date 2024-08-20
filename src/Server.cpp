@@ -152,7 +152,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             p[2] = '\0';
 
             if (match_once_or_more(text, p)) {
-                pattern += 2;
+                pattern += 3;
                 return match_symbol(text, pattern);
             }
         }
@@ -162,7 +162,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             p[2] = '\0';
 
             match_zero_or_one(text, p);
-            pattern += 2;
+            pattern += 3;
             return match_symbol(text, pattern);
         }
         else if (std::isdigit(text[0])) {
