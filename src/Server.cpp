@@ -130,13 +130,15 @@ bool match_symbol(const char*& text, const char*& pattern) {
         const char* pattern_start = pattern;
 
         int captured_pattern_index = num_captured_patterns; // Predicting the FUTURE!!!!!!!! (that's where this pattern will be placed.)
-
+        
+        // Here's another stupid move. I'm going to assume the pattern WILL be captured. Cause fuck it
+        num_captured_patterns++;
         if (match_symbol(text, ++pattern)) {
             while (pattern[0] != ')') {
                 pattern++;
             }
             pattern++;
-            
+
             pattern = pattern_start;
             capture_patterns(pattern); // Will capture the entire pattern, incl. sub-patterns. 
 
@@ -147,7 +149,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
             char* captured_text = (char*)malloc(captured_text_length + 1);
             strncpy(captured_text, text_start, captured_text_length);
             captured_text[captured_text_length] = '\0';
-            
+
             captured_patterns[captured_pattern_index] = captured_text;
             return match_symbol(text, ++pattern);
         }
@@ -156,6 +158,8 @@ bool match_symbol(const char*& text, const char*& pattern) {
         // Reset
         text = text_start;
         pattern = pattern_start;
+        num_captured_patterns--;
+
 
         while (pattern[0] != '|') {
             if (pattern[0] == ')') { // Not an optional pattern, it's a captured pattern
@@ -381,9 +385,6 @@ void capture_patterns(const char*& pattern) {
     bool is_optional_pattern = false;
     const char* pattern_start = pattern;
     const int captured_pattern_index = num_captured_patterns;
-
-    // Here's another stupid move. I'm going to assume the pattern WILL be captured. Cause fuck it
-    num_captured_patterns++;
 
     while (*pattern != ')') { // Iterate to the end of the pattern.
         if (*pattern == '|') {
