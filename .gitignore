@@ -51,3 +51,4 @@ vcpkg_installed
 # Unused code/files/tutorials
 src/crap/*
 .vscode/*
+src/Server*.*
