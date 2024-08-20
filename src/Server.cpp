@@ -31,6 +31,10 @@ bool match_pattern(const std::string& input_line, const std::string& pattern_str
         const char* pattern = pattern_ptr + 1;
         const char* text = text_ptr;
 
+        captured_patterns = (char**)malloc(pattern_string.length());
+        num_captured_patterns = 0;
+
+
         return match_symbol(text, pattern); // Avoids the loop below, so only matches at the start.
     }
 
