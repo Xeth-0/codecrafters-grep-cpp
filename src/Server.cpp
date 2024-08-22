@@ -105,9 +105,14 @@ bool match_symbol(const char*& text, const char*& pattern) {
         char_group_pattern[pattern_end - pattern + 2] = '\0';
 
         if (pattern_end[1] == '+') { // Match one or more.
-            if (match_once_or_more(text, char_group_pattern)) {
-                pattern = pattern_end + 2;
-                return match_symbol(text, pattern);
+            // need to keep track if i've matched at least once.
+            // need to proceed if it's matched once. else return false.
+
+            if (match_character_group(text, char_group_pattern)){
+                const char* text_start = text;
+                const char* pattern_cont = pattern_end + 3;
+
+                return match_symbol(text, pattern) || match_symbol(text_start, pattern_cont);
             }
             return false;
         }
@@ -121,7 +126,7 @@ bool match_symbol(const char*& text, const char*& pattern) {
                 pattern = pattern_end + 1;
                 return match_symbol(text, pattern);
             }
-            std::cout << "failed match" << std::endl;
+            // std::cout << "failed match" << std::endl;
             return false;
         }
     }
@@ -129,18 +134,18 @@ bool match_symbol(const char*& text, const char*& pattern) {
         const char* text_start = text;
         const char* pattern_start = pattern;
 
-        int captured_pattern_index = num_captured_patterns; // Predicting the FUTURE!!!!!!!! (that's where this pattern will be placed.)
-        
+        int captured_pattern_index = num_captured_patterns;
         // Here's another stupid move. I'm going to assume the pattern WILL be captured. Cause fuck it
         num_captured_patterns++;
         if (match_symbol(text, ++pattern)) {
+            if (*text == '\0') return true;
             while (pattern[0] != ')') {
                 pattern++;
             }
-            pattern++;
+            // pattern++;
 
-            pattern = pattern_start;
-            capture_patterns(pattern); // Will capture the entire pattern, incl. sub-patterns. 
+            // pattern = pattern_start;
+            // capture_patterns(pattern); // Will capture the entire pattern, incl. sub-patterns. 
 
             // Replacing the captured pattern with the text it matched with. 
             // (Ahh, the magic of recursive calls. The subpatterns should already
@@ -283,8 +288,36 @@ bool match_character_group(const char*& text, char*& pattern) {
     return false;
 }
 
+// bool match_once_or_more(const char*& text, char* pattern) {
+//     // we want the text to iterate over (in the caller) during this, not the pattern
+
+//     bool flag = false;
+//     const char* p = pattern;
+//     const char* text_start = text;
+//     if (match_symbol(text, p)) {
+//         flag = true;
+//         return match_once_or_more(text, pattern) || flag;
+//     }
+
+//     text = text_start;
+//     return flag;
+// }
+
+bool match_zero_or_one(const char*& text, char* pattern) {
+    const char* p = pattern;
+    const char* text_start = text;
+
+    if (!match_symbol(text, p)) text = text_start;
+    return true;
+}
+
 bool match_once_or_more(const char*& text, char* pattern) {
-    // we want the text to iterate over (in the caller) during this, not the pattern
+    /**
+     * Changes:
+     *  need it to call match_symbol within this control flow.
+     *  caller needs to recursively return this, instead of just making it inside a conditional.
+     *
+     */
 
     bool flag = false;
     const char* p = pattern;
@@ -296,15 +329,11 @@ bool match_once_or_more(const char*& text, char* pattern) {
 
     text = text_start;
     return flag;
+
+
 }
 
-bool match_zero_or_one(const char*& text, char* pattern) {
-    const char* p = pattern;
-    const char* text_start = text;
 
-    if (!match_symbol(text, p)) text = text_start;
-    return true;
-}
 
 
 // void capture_patterns(const char* pattern) {
@@ -384,15 +413,15 @@ void capture_patterns(const char*& pattern) {
     // from where this is called. FIGURE OUT THE REST, thank you :).
     bool is_optional_pattern = false;
     const char* pattern_start = pattern;
-    const int captured_pattern_index = num_captured_patterns;
+    const int captured_pattern_index = num_captured_patterns - 1;
 
     while (*pattern != ')') { // Iterate to the end of the pattern.
         if (*pattern == '|') {
             is_optional_pattern = true;
         }
-        else if ((pattern - pattern_start != 0) && *pattern == '(') { // nested pattern
-            capture_patterns(pattern);
-        }
+        // else if ((pattern - pattern_start != 0) && *pattern == '(') { // nested pattern
+        //     capture_patterns(pattern);
+        // }
         else if (*pattern == '\0') {
             std::cerr << "Unexpected end of pattern while capturing pattern. Exiting...." << std::endl;
             throw "Unexpected end of pattern while capturing pattern. Exiting....";
@@ -409,8 +438,6 @@ void capture_patterns(const char*& pattern) {
     captured_patterns[captured_pattern_index] = captured_pattern;
     return;
 }
-
-
 int main(int argc, char* argv[]) {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
