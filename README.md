@@ -1,3 +1,4 @@
+# Challenge Completed (Stage 15/15)
 [![progress-banner](https://backend.codecrafters.io/progress/grep/59c2c89c-22bf-4848-8a27-bd37ba574ba8)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
 ["Build Your Own grep" Challenge](https://app.codecrafters.io/courses/grep/overview).
